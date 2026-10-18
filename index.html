@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ExcaliLite — Hand-Drawn Whiteboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,86 +10,207 @@
   <link rel="stylesheet" href="style.css">
   <script src="rough.js"></script>
 </head>
-<body>
-  <!-- Header / Top Navigation -->
+<body class="theme-light">
+  <!-- Top Navigation & Action Bar -->
   <header class="app-header">
     <div class="header-left">
-      <div class="logo">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-        </svg>
-        <span>ExcaliLite</span>
+      <div class="logo-group">
+        <div class="logo-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+        </div>
+        <span class="logo-title">ExcaliLite</span>
       </div>
-      <div class="badge">Clone</div>
+
+      <!-- Document Title & Saved status -->
+      <div class="doc-status-badge">
+        <span class="save-indicator" id="saveIndicator">Saved</span>
+      </div>
     </div>
 
     <!-- Center Drawing Toolbar -->
-    <div class="center-toolbar">
-      <button class="tool-btn active" data-tool="select" title="Selection (V)">
+    <nav class="center-toolbar" id="mainToolbar">
+      <!-- 0: Hand (Pan) -->
+      <button class="tool-btn" data-tool="hand" title="Hand (Pan Canvas) [H]">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0"></path>
+          <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2"></path>
+          <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8"></path>
+          <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"></path>
+        </svg>
+        <span class="tool-shortcut">0</span>
+      </button>
+
+      <!-- 1: Select -->
+      <button class="tool-btn active" data-tool="select" title="Selection [1 / V]">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 3l7 18 3-7 7-3L3 3z"></path>
         </svg>
         <span class="tool-shortcut">1</span>
       </button>
 
-      <button class="tool-btn" data-tool="rectangle" title="Rectangle Box (R)">
+      <!-- 2: Rectangle -->
+      <button class="tool-btn" data-tool="rectangle" title="Rectangle [2 / R]">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
         </svg>
         <span class="tool-shortcut">2</span>
       </button>
 
-      <button class="tool-btn" data-tool="connector" title="Arrow Connector (A)">
+      <!-- 3: Diamond -->
+      <button class="tool-btn" data-tool="diamond" title="Diamond [3 / D]">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-          <polyline points="12 5 19 12 12 19"></polyline>
+          <polygon points="12 2 22 12 12 22 2 12"></polygon>
         </svg>
         <span class="tool-shortcut">3</span>
       </button>
 
-      <button class="tool-btn" data-tool="text" title="Text (T)">
+      <!-- 4: Ellipse -->
+      <button class="tool-btn" data-tool="ellipse" title="Ellipse / Circle [4 / O]">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"></circle>
+        </svg>
+        <span class="tool-shortcut">4</span>
+      </button>
+
+      <!-- 5: Arrow Connector -->
+      <button class="tool-btn" data-tool="arrow" title="Arrow Connector [5 / A]">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+        <span class="tool-shortcut">5</span>
+      </button>
+
+      <!-- 6: Line -->
+      <button class="tool-btn" data-tool="line" title="Straight Line [6 / L]">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4" y1="20" x2="20" y2="4"></line>
+        </svg>
+        <span class="tool-shortcut">6</span>
+      </button>
+
+      <!-- 7: Freedraw (Pencil) -->
+      <button class="tool-btn" data-tool="freedraw" title="Pencil Freehand [7 / P]">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 19l7-7 3 3-7 7-3-3z"></path>
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path>
+          <path d="M2 2l7.586 7.586"></path>
+          <circle cx="11" cy="11" r="2"></circle>
+        </svg>
+        <span class="tool-shortcut">7</span>
+      </button>
+
+      <!-- 8: Text -->
+      <button class="tool-btn" data-tool="text" title="Text [8 / T]">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="4 7 4 4 20 4 20 7"></polyline>
           <line x1="9" y1="20" x2="15" y2="20"></line>
           <line x1="12" y1="4" x2="12" y2="20"></line>
         </svg>
-        <span class="tool-shortcut">4</span>
+        <span class="tool-shortcut">8</span>
       </button>
 
-      <div class="toolbar-separator"></div>
-
-      <button class="tool-btn" id="deleteBtn" title="Delete selected element (Del / Backspace)">
+      <!-- 9: Eraser -->
+      <button class="tool-btn" data-tool="eraser" title="Eraser [9 / E]">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"></polyline>
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          <path d="M20 20H7L3 16C2 15 2 13 3 12L13 2L22 11L20 20Z"></path>
+          <line x1="17" y1="17" x2="11" y2="11"></line>
+        </svg>
+        <span class="tool-shortcut">9</span>
+      </button>
+
+      <!-- Image upload tool -->
+      <button class="tool-btn" id="imageToolBtn" title="Insert Image from file">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
         </svg>
       </button>
-    </div>
+      <input type="file" id="imageInput" accept="image/*" style="display:none">
+    </nav>
 
-    <!-- Actions / Export & Save -->
+    <!-- Header Actions (Undo, Redo, Theme, Help, Export/Save) -->
     <div class="header-right">
-      <button class="action-btn" id="saveBtn" title="Save Drawing to JSON">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-          <polyline points="17 21 17 13 7 13 7 21"></polyline>
-          <polyline points="7 3 7 8 15 8"></polyline>
+      <!-- Undo / Redo -->
+      <div class="history-controls">
+        <button class="icon-action-btn" id="undoBtn" title="Undo (Ctrl/Cmd+Z)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7v6h6"></path>
+            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+          </svg>
+        </button>
+        <button class="icon-action-btn" id="redoBtn" title="Redo (Ctrl/Cmd+Y or Ctrl+Shift+Z)">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 7v6h-6"></path>
+            <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Theme Toggle -->
+      <button class="icon-action-btn" id="themeToggleBtn" title="Toggle Light/Dark Theme">
+        <svg id="themeMoonIcon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
         </svg>
-        <span>Save</span>
+        <svg id="themeSunIcon" style="display:none" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
       </button>
 
-      <button class="action-btn" id="loadBtn" title="Open / Load JSON file">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-          <polyline points="17 8 12 3 7 8"></polyline>
-          <line x1="12" y1="3" x2="12" y2="15"></line>
+      <!-- Keyboard Shortcuts Help -->
+      <button class="icon-action-btn" id="helpBtn" title="Keyboard Shortcuts (?)">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
         </svg>
-        <span>Open</span>
       </button>
-      <input type="file" id="fileInput" accept=".json" style="display:none">
 
-      <button class="action-btn secondary" id="clearBtn" title="Clear Canvas">
-        Clear
-      </button>
+      <!-- Export / Menu Dropdown Trigger -->
+      <div class="dropdown-container">
+        <button class="action-btn primary" id="exportMenuBtn">
+          <span>Export</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+
+        <div class="dropdown-menu" id="exportDropdown">
+          <button class="dropdown-item" id="saveJsonItem">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+            <span>Save as JSON (.excalilite)</span>
+          </button>
+          <button class="dropdown-item" id="exportPngItem">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Export to PNG Image</span>
+          </button>
+          <button class="dropdown-item" id="exportSvgItem">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            <span>Export to SVG Vector</span>
+          </button>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-item" id="openJsonItem">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <span>Open Document...</span>
+          </button>
+          <button class="dropdown-item danger" id="newDocItem">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <span>Reset Canvas (New)</span>
+          </button>
+        </div>
+      </div>
+      <input type="file" id="docFileInput" accept=".json,.excalilite" style="display:none">
     </div>
   </header>
 
@@ -97,33 +218,69 @@
   <main class="canvas-container" id="canvasContainer">
     <canvas id="canvas"></canvas>
 
-    <!-- Side Floating Styling Property Panel -->
+    <!-- Contextual Properties Panel (Floating left sidebar) -->
     <aside class="property-panel" id="propertyPanel">
-      <div class="panel-section-title">Stroke (Outline)</div>
-      
-      <!-- Outline Color Picker -->
-      <div class="color-palette" id="strokePalette">
-        <button class="color-swatch active" data-color="#1e1e1e" style="background:#1e1e1e" title="Black"></button>
-        <button class="color-swatch" data-color="#e03131" style="background:#e03131" title="Red"></button>
-        <button class="color-swatch" data-color="#2f9e44" style="background:#2f9e44" title="Green"></button>
-        <button class="color-swatch" data-color="#1971c2" style="background:#1971c2" title="Blue"></button>
-        <button class="color-swatch" data-color="#f08c00" style="background:#f08c00" title="Orange"></button>
-        <button class="color-swatch" data-color="#9c36b5" style="background:#9c36b5" title="Purple"></button>
+      <!-- Stroke Color -->
+      <div class="panel-section">
+        <div class="panel-section-title">Stroke</div>
+        <div class="color-palette" id="strokePalette">
+          <button class="color-swatch active" data-color="#1e1e1e" style="background:#1e1e1e" title="Black"></button>
+          <button class="color-swatch" data-color="#e03131" style="background:#e03131" title="Red"></button>
+          <button class="color-swatch" data-color="#2f9e44" style="background:#2f9e44" title="Green"></button>
+          <button class="color-swatch" data-color="#1971c2" style="background:#1971c2" title="Blue"></button>
+          <button class="color-swatch" data-color="#f08c00" style="background:#f08c00" title="Orange"></button>
+          <button class="color-swatch" data-color="#9c36b5" style="background:#9c36b5" title="Purple"></button>
+          <button class="color-swatch" data-color="#099268" style="background:#099268" title="Teal"></button>
+          <button class="color-swatch" data-color="#868e96" style="background:#868e96" title="Gray"></button>
+          <label class="custom-color-picker-label" title="Custom Stroke Color">
+            <input type="color" id="customStrokeInput" value="#1e1e1e">
+            <span>+</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Inside Background Fill Color -->
+      <div class="panel-section">
+        <div class="panel-section-title">Background</div>
+        <div class="color-palette" id="bgPalette">
+          <button class="color-swatch transparent-swatch active" data-color="transparent" title="Transparent"></button>
+          <button class="color-swatch" data-color="#ffc9c9" style="background:#ffc9c9" title="Soft Pink"></button>
+          <button class="color-swatch" data-color="#b2f2bb" style="background:#b2f2bb" title="Soft Green"></button>
+          <button class="color-swatch" data-color="#a5d8ff" style="background:#a5d8ff" title="Soft Blue"></button>
+          <button class="color-swatch" data-color="#ffec99" style="background:#ffec99" title="Soft Yellow"></button>
+          <button class="color-swatch" data-color="#eebefa" style="background:#eebefa" title="Soft Lavender"></button>
+          <button class="color-swatch" data-color="#c3fae8" style="background:#c3fae8" title="Soft Teal"></button>
+          <button class="color-swatch" data-color="#dee2e6" style="background:#dee2e6" title="Soft Gray"></button>
+          <label class="custom-color-picker-label" title="Custom Background Color">
+            <input type="color" id="customBgInput" value="#a5d8ff">
+            <span>+</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Fill Style -->
+      <div class="panel-row">
+        <label>Fill</label>
+        <div class="segmented-control" id="fillStyleControl">
+          <button class="segment active" data-val="hachure">Hachure</button>
+          <button class="segment" data-val="cross-hatch">Cross</button>
+          <button class="segment" data-val="solid">Solid</button>
+        </div>
       </div>
 
       <!-- Stroke Width -->
       <div class="panel-row">
-        <label>Width</label>
+        <label>Stroke width</label>
         <div class="segmented-control" id="strokeWidthControl">
-          <button class="segment active" data-val="1">Thin</button>
-          <button class="segment" data-val="2.5">Med</button>
+          <button class="segment active" data-val="1.5">Thin</button>
+          <button class="segment" data-val="2.8">Med</button>
           <button class="segment" data-val="4.5">Thick</button>
         </div>
       </div>
 
       <!-- Stroke Style -->
       <div class="panel-row">
-        <label>Style</label>
+        <label>Stroke style</label>
         <div class="segmented-control" id="strokeStyleControl">
           <button class="segment active" data-val="solid">Solid</button>
           <button class="segment" data-val="dashed">Dashed</button>
@@ -131,62 +288,127 @@
         </div>
       </div>
 
-      <div class="panel-divider"></div>
-
-      <!-- Inside Fill Color -->
-      <div class="panel-section-title">Background (Inside Fill)</div>
-      <div class="color-palette" id="bgPalette">
-        <button class="color-swatch transparent-swatch active" data-color="transparent" title="Transparent"></button>
-        <button class="color-swatch" data-color="#ffc9c9" style="background:#ffc9c9" title="Soft Pink"></button>
-        <button class="color-swatch" data-color="#b2f2bb" style="background:#b2f2bb" title="Soft Green"></button>
-        <button class="color-swatch" data-color="#a5d8ff" style="background:#a5d8ff" title="Soft Blue"></button>
-        <button class="color-swatch" data-color="#ffec99" style="background:#ffec99" title="Soft Yellow"></button>
-        <button class="color-swatch" data-color="#eebefa" style="background:#eebefa" title="Soft Lavender"></button>
-      </div>
-
-      <!-- Fill Pattern -->
-      <div class="panel-row">
-        <label>Fill</label>
-        <div class="segmented-control" id="fillStyleControl">
-          <button class="segment active" data-val="hachure">Sketch</button>
-          <button class="segment" data-val="cross-hatch">Cross</button>
-          <button class="segment" data-val="solid">Solid</button>
-        </div>
-      </div>
-
-      <div class="panel-divider"></div>
-
-      <!-- Roughness / Hand-drawn Style -->
+      <!-- Sloppiness (Roughness) -->
       <div class="panel-row">
         <label>Sloppiness</label>
         <div class="segmented-control" id="roughnessControl">
           <button class="segment" data-val="0">Neat</button>
-          <button class="segment active" data-val="1.4">Hand</button>
-          <button class="segment" data-val="2.8">Sketch</button>
+          <button class="segment active" data-val="1.2">Artist</button>
+          <button class="segment" data-val="2.4">Sketch</button>
+        </div>
+      </div>
+
+      <!-- Opacity Slider -->
+      <div class="panel-row">
+        <label>Opacity</label>
+        <div class="range-wrapper">
+          <input type="range" id="opacitySlider" min="10" max="100" value="100">
+          <span class="range-val" id="opacityVal">100%</span>
         </div>
       </div>
 
       <div class="panel-divider"></div>
 
-      <!-- Font Size for Box Text -->
+      <!-- Text Properties -->
       <div class="panel-row">
-        <label>Font</label>
+        <label>Font size</label>
         <div class="segmented-control" id="fontSizeControl">
           <button class="segment" data-val="16">S</button>
-          <button class="segment active" data-val="20">M</button>
-          <button class="segment" data-val="26">L</button>
+          <button class="segment active" data-val="22">M</button>
+          <button class="segment" data-val="28">L</button>
+          <button class="segment" data-val="36">XL</button>
+        </div>
+      </div>
+
+      <div class="panel-row">
+        <label>Text Align</label>
+        <div class="segmented-control" id="textAlignControl">
+          <button class="segment active" data-val="center">Center</button>
+          <button class="segment" data-val="left">Left</button>
+          <button class="segment" data-val="right">Right</button>
+        </div>
+      </div>
+
+      <div class="panel-divider"></div>
+
+      <!-- Layer Ordering & Actions for selection -->
+      <div class="panel-actions-group">
+        <div class="panel-section-title">Layers & Actions</div>
+        <div class="icon-buttons-row">
+          <button class="sub-action-btn" id="bringForwardBtn" title="Bring Forward (])">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+            <span>Forward</span>
+          </button>
+          <button class="sub-action-btn" id="sendBackwardBtn" title="Send Backward ([)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            <span>Backward</span>
+          </button>
+          <button class="sub-action-btn" id="duplicateBtn" title="Duplicate (Ctrl+D)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span>Duplicate</span>
+          </button>
+          <button class="sub-action-btn danger" id="deleteSelectionBtn" title="Delete (Del / Backspace)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+            <span>Delete</span>
+          </button>
         </div>
       </div>
     </aside>
 
-    <!-- Inline editing input for text -->
+    <!-- Inline editing textarea for text -->
     <textarea id="inlineTextInput" class="inline-text-editor" style="display:none"></textarea>
 
-    <!-- Bottom Status Bar / Hint -->
-    <div class="canvas-hint">
-      <span>💡 Double-click any box to write/edit text • Drag connectors from box to box • Delete with Backspace</span>
+    <!-- Floating Zoom & Navigation Widget (Bottom-Left) -->
+    <div class="zoom-widget">
+      <button class="zoom-btn" id="zoomOutBtn" title="Zoom Out (Ctrl + -)">−</button>
+      <button class="zoom-display" id="zoomResetBtn" title="Click to reset zoom to 100%">100%</button>
+      <button class="zoom-btn" id="zoomInBtn" title="Zoom In (Ctrl + +)">+</button>
+      <button class="zoom-btn" id="fitContentBtn" title="Fit to content (Shift + 1)">Fit</button>
+    </div>
+
+    <!-- Bottom Status & Hint Banner -->
+    <div class="canvas-hint" id="statusHint">
+      <span>💡 Double-click any shape to edit text • Space+Drag or Middle-Click to pan • Scroll to zoom</span>
     </div>
   </main>
+
+  <!-- Keyboard Shortcuts Modal Dialog -->
+  <div class="modal-backdrop" id="shortcutsModal" style="display:none">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Keyboard Shortcuts</h3>
+        <button class="modal-close-btn" id="closeModalBtn">&times;</button>
+      </div>
+      <div class="shortcuts-grid">
+        <div class="shortcut-col">
+          <h4>Tools</h4>
+          <div class="shortcut-row"><span>Hand (Pan)</span><kbd>H</kbd> or <kbd>Space</kbd></div>
+          <div class="shortcut-row"><span>Selection</span><kbd>V</kbd> or <kbd>1</kbd></div>
+          <div class="shortcut-row"><span>Rectangle</span><kbd>R</kbd> or <kbd>2</kbd></div>
+          <div class="shortcut-row"><span>Diamond</span><kbd>D</kbd> or <kbd>3</kbd></div>
+          <div class="shortcut-row"><span>Ellipse</span><kbd>O</kbd> or <kbd>4</kbd></div>
+          <div class="shortcut-row"><span>Arrow Connector</span><kbd>A</kbd> or <kbd>5</kbd></div>
+          <div class="shortcut-row"><span>Line</span><kbd>L</kbd> or <kbd>6</kbd></div>
+          <div class="shortcut-row"><span>Pencil (Freedraw)</span><kbd>P</kbd> or <kbd>7</kbd></div>
+          <div class="shortcut-row"><span>Text</span><kbd>T</kbd> or <kbd>8</kbd></div>
+          <div class="shortcut-row"><span>Eraser</span><kbd>E</kbd> or <kbd>9</kbd></div>
+        </div>
+        <div class="shortcut-col">
+          <h4>Editing & Actions</h4>
+          <div class="shortcut-row"><span>Undo</span><kbd>Ctrl+Z</kbd></div>
+          <div class="shortcut-row"><span>Redo</span><kbd>Ctrl+Y</kbd> / <kbd>Ctrl+Shift+Z</kbd></div>
+          <div class="shortcut-row"><span>Duplicate</span><kbd>Ctrl+D</kbd></div>
+          <div class="shortcut-row"><span>Copy / Cut / Paste</span><kbd>Ctrl+C</kbd> / <kbd>X</kbd> / <kbd>V</kbd></div>
+          <div class="shortcut-row"><span>Delete Selected</span><kbd>Del</kbd> or <kbd>Backspace</kbd></div>
+          <div class="shortcut-row"><span>Select All</span><kbd>Ctrl+A</kbd></div>
+          <div class="shortcut-row"><span>Multi-select</span><kbd>Shift + Click</kbd></div>
+          <div class="shortcut-row"><span>Zoom In / Out</span><kbd>Ctrl +</kbd> / <kbd>Ctrl -</kbd></div>
+          <div class="shortcut-row"><span>Reset Zoom</span><kbd>Ctrl+0</kbd></div>
+          <div class="shortcut-row"><span>Save JSON</span><kbd>Ctrl+S</kbd></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>
