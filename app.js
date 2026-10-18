@@ -25,6 +25,21 @@
   const shortcutsModal = document.getElementById('shortcutsModal');
   const closeModalBtn = document.getElementById('closeModalBtn');
 
+  // Landing & Dashboard Elements
+  const landingPage = document.getElementById('landingPage');
+  const landingStartBtn = document.getElementById('landingStartBtn');
+  const landingDashboardBtn = document.getElementById('landingDashboardBtn');
+  const heroStartDrawingBtn = document.getElementById('heroStartDrawingBtn');
+  const heroOpenDashboardBtn = document.getElementById('heroOpenDashboardBtn');
+  const dashboardOverlay = document.getElementById('dashboardOverlay');
+  const closeDashboardBtn = document.getElementById('closeDashboardBtn');
+  const dashboardNewDocBtn = document.getElementById('dashboardNewDocBtn');
+  const dashboardSearchInput = document.getElementById('dashboardSearchInput');
+  const diagramsGrid = document.getElementById('diagramsGrid');
+  const openDashboardIconBtn = document.getElementById('openDashboardIconBtn');
+  const headerLogoBtn = document.getElementById('headerLogoBtn');
+  const docTitleInput = document.getElementById('docTitleInput');
+
   // Dropdown Export Menu
   const exportMenuBtn = document.getElementById('exportMenuBtn');
   const exportDropdown = document.getElementById('exportDropdown');
@@ -204,34 +219,213 @@
     saveIndicator.classList.remove('unsaved');
   }
 
+  // --- Multi-Document Storage & Dashboard Model ---
+  let currentDocId = 'default_diagram';
+  let currentDocTitle = 'Architecture Overview';
+
+  function getAllDocuments() {
+    try {
+      const docs = localStorage.getItem('excalilite_documents');
+      if (docs) return JSON.parse(docs);
+    } catch (e) {}
+    return [];
+  }
+
+  function saveAllDocuments(docsList) {
+    try {
+      localStorage.setItem('excalilite_documents', JSON.stringify(docsList));
+    } catch (e) {}
+  }
+
   function saveToLocalStorage() {
     try {
       const data = {
+        id: currentDocId,
+        title: currentDocTitle,
+        updatedAt: new Date().toISOString(),
+        elementCount: elements.length,
         elements,
         camera,
         theme: document.body.classList.contains('theme-dark') ? 'dark' : 'light'
       };
-      localStorage.setItem('excalilite_doc', JSON.stringify(data));
-    } catch (e) {
-      // LocalStorage might be quota limited with images
-    }
+      localStorage.setItem(`excalilite_doc_${currentDocId}`, JSON.stringify(data));
+
+      // Also update document registry index
+      const docs = getAllDocuments();
+      const existingIdx = docs.findIndex(d => d.id === currentDocId);
+      const meta = {
+        id: currentDocId,
+        title: currentDocTitle,
+        updatedAt: data.updatedAt,
+        elementCount: elements.length
+      };
+      if (existingIdx >= 0) {
+        docs[existingIdx] = meta;
+      } else {
+        docs.unshift(meta);
+      }
+      saveAllDocuments(docs);
+    } catch (e) {}
   }
 
-  function loadFromLocalStorage() {
+  function loadDocumentById(id) {
     try {
-      const saved = localStorage.getItem('excalilite_doc');
-      if (saved) {
-        const parsed = JSON.parse(saved);
+      const raw = localStorage.getItem(`excalilite_doc_${id}`);
+      if (raw) {
+        const parsed = JSON.parse(raw);
         if (parsed.elements && Array.isArray(parsed.elements)) {
+          currentDocId = parsed.id || id;
+          currentDocTitle = parsed.title || 'Untitled Diagram';
+          docTitleInput.value = currentDocTitle;
           elements = parsed.elements;
           if (parsed.camera) camera = parsed.camera;
           if (parsed.theme === 'dark') setTheme('dark');
-          updateZoomDisplay();
+          selectedElementIds.clear();
+          pushHistory();
+          render();
+          markSaved();
           return true;
         }
       }
     } catch (e) {}
     return false;
+  }
+
+  function createNewDocument(title = 'Untitled Diagram') {
+    currentDocId = 'doc_' + Date.now();
+    currentDocTitle = title;
+    docTitleInput.value = currentDocTitle;
+    elements = [];
+    selectedElementIds.clear();
+    resetZoom();
+    pushHistory();
+    saveToLocalStorage();
+    render();
+    markSaved();
+  }
+
+  function duplicateDocument(id) {
+    const raw = localStorage.getItem(`excalilite_doc_${id}`);
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      const newId = 'doc_' + Date.now();
+      const newTitle = (parsed.title || 'Untitled') + ' (Copy)';
+      parsed.id = newId;
+      parsed.title = newTitle;
+      parsed.updatedAt = new Date().toISOString();
+      localStorage.setItem(`excalilite_doc_${newId}`, JSON.stringify(parsed));
+
+      const docs = getAllDocuments();
+      docs.unshift({
+        id: newId,
+        title: newTitle,
+        updatedAt: parsed.updatedAt,
+        elementCount: parsed.elements ? parsed.elements.length : 0
+      });
+      saveAllDocuments(docs);
+      renderDashboard();
+    } catch (e) {}
+  }
+
+  function deleteDocument(id) {
+    if (confirm('Delete this diagram? This action cannot be undone.')) {
+      localStorage.removeItem(`excalilite_doc_${id}`);
+      let docs = getAllDocuments();
+      docs = docs.filter(d => d.id !== id);
+      saveAllDocuments(docs);
+
+      if (currentDocId === id) {
+        if (docs.length > 0) {
+          loadDocumentById(docs[0].id);
+        } else {
+          createNewDocument('New Drawing');
+        }
+      }
+      renderDashboard();
+    }
+  }
+
+  function renderDashboard(searchQuery = '') {
+    const docs = getAllDocuments();
+    diagramsGrid.innerHTML = '';
+
+    const query = searchQuery.trim().toLowerCase();
+    const filtered = query ? docs.filter(d => (d.title || '').toLowerCase().includes(query)) : docs;
+
+    if (filtered.length === 0) {
+      diagramsGrid.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+          <div style="font-size: 32px; margin-bottom: 8px;">📂</div>
+          <p style="font-size: 14px; font-weight: 500;">No diagrams found.</p>
+          <button class="action-btn primary" id="emptyNewDocBtn" style="margin-top: 12px;">Create your first diagram</button>
+        </div>
+      `;
+      const emptyBtn = document.getElementById('emptyNewDocBtn');
+      if (emptyBtn) {
+        emptyBtn.addEventListener('click', () => {
+          createNewDocument();
+          closeDashboard();
+        });
+      }
+      return;
+    }
+
+    filtered.forEach(doc => {
+      const card = document.createElement('div');
+      card.className = `diagram-card ${doc.id === currentDocId ? 'active' : ''}`;
+      const dateStr = doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString() : 'Recent';
+
+      card.innerHTML = `
+        <div class="diagram-preview-thumb">
+          <span>📐 ${doc.elementCount || 0} elements</span>
+        </div>
+        <div>
+          <div class="diagram-card-title" title="${doc.title || 'Untitled'}">${doc.title || 'Untitled'}</div>
+          <div class="diagram-card-meta">
+            <span>${dateStr}</span>
+            <span>${doc.id === currentDocId ? '• Active' : ''}</span>
+          </div>
+        </div>
+        <div class="diagram-card-actions">
+          <button class="card-action-btn open-btn" data-id="${doc.id}">Open</button>
+          <button class="card-action-btn copy-btn" data-id="${doc.id}">Copy</button>
+          <button class="card-action-btn delete-btn delete" data-id="${doc.id}">Delete</button>
+        </div>
+      `;
+
+      card.querySelector('.open-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        loadDocumentById(doc.id);
+        closeDashboard();
+      });
+
+      card.querySelector('.copy-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        duplicateDocument(doc.id);
+      });
+
+      card.querySelector('.delete-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteDocument(doc.id);
+      });
+
+      card.addEventListener('click', () => {
+        loadDocumentById(doc.id);
+        closeDashboard();
+      });
+
+      diagramsGrid.appendChild(card);
+    });
+  }
+
+  function openDashboard() {
+    renderDashboard();
+    dashboardOverlay.style.display = 'flex';
+  }
+
+  function closeDashboard() {
+    dashboardOverlay.style.display = 'none';
   }
 
   // --- Element Creators ---
@@ -1381,10 +1575,14 @@
       try {
         const parsed = JSON.parse(event.target.result);
         if (parsed.elements && Array.isArray(parsed.elements)) {
+          currentDocId = 'doc_' + Date.now();
+          currentDocTitle = file.name.replace(/\.(json|excalilite)$/i, '') || 'Imported Diagram';
+          docTitleInput.value = currentDocTitle;
           elements = parsed.elements;
           if (parsed.camera) camera = parsed.camera;
           selectedElementIds.clear();
           pushHistory();
+          saveToLocalStorage();
           render();
           markSaved();
         } else {
@@ -1401,11 +1599,7 @@
   // 3. New Document
   newDocItem.addEventListener('click', () => {
     if (confirm('Create new drawing? Unsaved changes will be cleared.')) {
-      elements = [];
-      selectedElementIds.clear();
-      resetZoom();
-      pushHistory();
-      render();
+      createNewDocument('Untitled Diagram');
     }
   });
 
@@ -1939,10 +2133,59 @@
 
     elements = [box1, diamond1, ellipse1, arrow1, arrow2];
     pushHistory();
+    saveToLocalStorage();
     resizeCanvas();
   }
 
+  // --- Landing & Dashboard Event Listeners ---
+  if (landingStartBtn) landingStartBtn.addEventListener('click', () => { landingPage.style.display = 'none'; });
+  if (heroStartDrawingBtn) heroStartDrawingBtn.addEventListener('click', () => { landingPage.style.display = 'none'; });
+  if (landingDashboardBtn) landingDashboardBtn.addEventListener('click', () => { landingPage.style.display = 'none'; openDashboard(); });
+  if (heroOpenDashboardBtn) heroOpenDashboardBtn.addEventListener('click', () => { landingPage.style.display = 'none'; openDashboard(); });
+  if (openDashboardIconBtn) openDashboardIconBtn.addEventListener('click', openDashboard);
+  if (headerLogoBtn) headerLogoBtn.addEventListener('click', openDashboard);
+  if (closeDashboardBtn) closeDashboardBtn.addEventListener('click', closeDashboard);
+  if (dashboardOverlay) {
+    dashboardOverlay.addEventListener('click', (e) => {
+      if (e.target === dashboardOverlay) closeDashboard();
+    });
+  }
+
+  if (dashboardNewDocBtn) {
+    dashboardNewDocBtn.addEventListener('click', () => {
+      createNewDocument('Untitled Diagram');
+      closeDashboard();
+    });
+  }
+
+  if (dashboardSearchInput) {
+    dashboardSearchInput.addEventListener('input', (e) => {
+      renderDashboard(e.target.value);
+    });
+  }
+
+  if (docTitleInput) {
+    docTitleInput.addEventListener('input', (e) => {
+      currentDocTitle = e.target.value || 'Untitled Diagram';
+      markUnsaved();
+    });
+    docTitleInput.addEventListener('blur', () => {
+      if (!docTitleInput.value.trim()) {
+        docTitleInput.value = 'Untitled Diagram';
+        currentDocTitle = 'Untitled Diagram';
+      }
+      saveToLocalStorage();
+      markSaved();
+    });
+  }
+
   // Start app
-  initDefaultDiagram();
+  const allDocs = getAllDocuments();
+  if (allDocs.length > 0) {
+    loadDocumentById(allDocs[0].id);
+    resizeCanvas();
+  } else {
+    initDefaultDiagram();
+  }
 
 })();
