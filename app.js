@@ -100,6 +100,7 @@
   // Interaction tracking
   let isPointerDown = false;
   let isPanning = false;
+  let isSpacePressed = false;
   let isDraggingElements = false;
   let isSelectingBox = false;
   let isDrawingShape = false;
@@ -759,7 +760,7 @@
     isPointerDown = true;
 
     // Check Space key or Middle Click for Panning
-    if (e.button === 1 || e.spaceKey || activeTool === 'hand') {
+    if (e.button === 1 || isSpacePressed || activeTool === 'hand') {
       isPanning = true;
       canvas.style.cursor = 'grabbing';
       return;
@@ -1508,21 +1509,83 @@
 
       const opts = {
         stroke: el.stroke,
-        strokeWidth: el.strokeWidth,
-        roughness: el.roughness,
+        strokeWidth: el.strokeWidth || 1.5,
+        roughness: el.roughness !== undefined ? el.roughness : 1.2,
         fill: el.fill === 'transparent' ? undefined : el.fill,
-        fillStyle: el.fillStyle
+        fillStyle: el.fillStyle || 'hachure'
       };
 
       let node = null;
-      if (el.type === 'rectangle') node = rcSvg.rectangle(minElX, minElY, absW, absH, opts);
-      else if (el.type === 'ellipse') node = rcSvg.ellipse(minElX + absW/2, minElY + absH/2, absW, absH, opts);
-      else if (el.type === 'line' || el.type === 'arrow') {
+      if (el.type === 'rectangle') {
+        node = rcSvg.rectangle(minElX, minElY, absW, absH, opts);
+      } else if (el.type === 'diamond') {
+        const cx = minElX + absW / 2;
+        const cy = minElY + absH / 2;
+        node = rcSvg.polygon([[cx, minElY], [minElX + absW, cy], [cx, minElY + absH], [minElX, cy]], opts);
+      } else if (el.type === 'ellipse') {
+        node = rcSvg.ellipse(minElX + absW / 2, minElY + absH / 2, absW, absH, opts);
+      } else if (el.type === 'line' || el.type === 'arrow') {
         const pts = getConnectorPoints(el);
-        node = rcSvg.line(pts.x1, pts.y1, pts.x2, pts.y2, opts);
+        const lineGroup = document.createElementNS(svgNs, 'g');
+        lineGroup.appendChild(rcSvg.line(pts.x1, pts.y1, pts.x2, pts.y2, opts));
+        if (el.type === 'arrow') {
+          const angle = Math.atan2(pts.y2 - pts.y1, pts.x2 - pts.x1);
+          const headLen = 14 + (el.strokeWidth || 1.5) * 2;
+          const arrowAngle = Math.PI / 6;
+          const lx = pts.x2 - headLen * Math.cos(angle - arrowAngle);
+          const ly = pts.y2 - headLen * Math.sin(angle - arrowAngle);
+          const rx = pts.x2 - headLen * Math.cos(angle + arrowAngle);
+          const ry = pts.y2 - headLen * Math.sin(angle + arrowAngle);
+          lineGroup.appendChild(rcSvg.line(pts.x2, pts.y2, lx, ly, opts));
+          lineGroup.appendChild(rcSvg.line(pts.x2, pts.y2, rx, ry, opts));
+        }
+        node = lineGroup;
+      } else if (el.type === 'freedraw') {
+        if (el.points && el.points.length > 1) {
+          const freedrawGroup = document.createElementNS(svgNs, 'g');
+          for (let i = 0; i < el.points.length - 1; i++) {
+            freedrawGroup.appendChild(rcSvg.line(el.points[i].x, el.points[i].y, el.points[i+1].x, el.points[i+1].y, opts));
+          }
+          node = freedrawGroup;
+        }
+      } else if (el.type === 'image' && el.dataUrl) {
+        const imgNode = document.createElementNS(svgNs, 'image');
+        imgNode.setAttribute('href', el.dataUrl);
+        imgNode.setAttribute('x', `${minElX}`);
+        imgNode.setAttribute('y', `${minElY}`);
+        imgNode.setAttribute('width', `${absW}`);
+        imgNode.setAttribute('height', `${absH}`);
+        node = imgNode;
       }
 
       if (node) g.appendChild(node);
+
+      // Render text inside shape or standalone
+      if (el.text && el.text.trim()) {
+        const textGroup = document.createElementNS(svgNs, 'g');
+        const lines = el.text.split('\n');
+        const fontSize = el.fontSize || 22;
+        const lineHeight = fontSize * 1.35;
+        const totalHeight = lines.length * lineHeight;
+        const startY = minElY + (absH - totalHeight) / 2 + lineHeight * 0.8;
+
+        lines.forEach((line, idx) => {
+          const textNode = document.createElementNS(svgNs, 'text');
+          textNode.setAttribute('font-family', "'Architects Daughter', cursive, sans-serif");
+          textNode.setAttribute('font-size', `${fontSize}px`);
+          textNode.setAttribute('fill', el.stroke);
+          let posX = minElX + absW / 2;
+          let textAnchor = 'middle';
+          if (el.textAlign === 'left') { posX = minElX + 12; textAnchor = 'start'; }
+          if (el.textAlign === 'right') { posX = minElX + absW - 12; textAnchor = 'end'; }
+          textNode.setAttribute('x', `${posX}`);
+          textNode.setAttribute('y', `${startY + idx * lineHeight}`);
+          textNode.setAttribute('text-anchor', textAnchor);
+          textNode.textContent = line;
+          textGroup.appendChild(textNode);
+        });
+        g.appendChild(textGroup);
+      }
     });
 
     svgEl.appendChild(g);
@@ -1581,19 +1644,36 @@
           roughC.line(el.points[i].x, el.points[i].y, el.points[i+1].x, el.points[i+1].y, roughOptions);
         }
       }
+    } else if (el.type === 'image' && el.dataUrl) {
+      let img = imageElementCache.get(el.dataUrl);
+      if (img && img.complete) {
+        targetCtx.drawImage(img, minX, minY, absW, absH);
+      }
     }
 
     if (el.text && el.text.trim()) {
       targetCtx.font = `${el.fontSize || 22}px 'Architects Daughter', cursive, sans-serif`;
-      targetCtx.fillStyle = el.stroke;
-      targetCtx.textAlign = el.textAlign || 'center';
-      targetCtx.textBaseline = 'middle';
+      targetCtx.fillStyle = el.stroke === 'transparent' ? '#1e1e1e' : el.stroke;
       const lines = el.text.split('\n');
       const lineHeight = (el.fontSize || 22) * 1.35;
-      const startY = minY + (absH - lines.length * lineHeight) / 2 + lineHeight / 2;
-      lines.forEach((line, idx) => {
-        targetCtx.fillText(line, minX + absW / 2, startY + idx * lineHeight);
-      });
+
+      if (el.type === 'text') {
+        targetCtx.textAlign = el.textAlign || 'left';
+        targetCtx.textBaseline = 'top';
+        lines.forEach((line, idx) => {
+          targetCtx.fillText(line, el.x, el.y + idx * lineHeight);
+        });
+      } else {
+        targetCtx.textAlign = el.textAlign || 'center';
+        targetCtx.textBaseline = 'middle';
+        const startY = minY + (absH - lines.length * lineHeight) / 2 + lineHeight / 2;
+        let posX = minX + absW / 2;
+        if (el.textAlign === 'left') posX = minX + 12;
+        if (el.textAlign === 'right') posX = minX + absW - 12;
+        lines.forEach((line, idx) => {
+          targetCtx.fillText(line, posX, startY + idx * lineHeight);
+        });
+      }
     }
 
     targetCtx.restore();
@@ -1633,6 +1713,10 @@
 
   // --- Keyboard Shortcuts ---
   window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && document.activeElement !== inlineTextInput && document.activeElement.tagName !== 'INPUT') {
+      isSpacePressed = true;
+      if (!isPanning) canvas.style.cursor = 'grab';
+    }
     if (document.activeElement === inlineTextInput || document.activeElement.tagName === 'INPUT') return;
 
     // Undo / Redo
@@ -1742,6 +1826,15 @@
     if (e.key === '8' || e.key.toLowerCase() === 't') setTool('text');
     if (e.key === '9' || e.key.toLowerCase() === 'e') setTool('eraser');
     if (e.key === '?') shortcutsModal.style.display = 'flex';
+  });
+
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+      isSpacePressed = false;
+      if (!isPanning) {
+        canvas.style.cursor = activeTool === 'hand' ? 'grab' : activeTool === 'select' ? 'default' : 'crosshair';
+      }
+    }
   });
 
   // Undo / Redo buttons
