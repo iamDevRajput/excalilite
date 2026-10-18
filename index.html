@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ExcaliLite — Hand-Drawn Whiteboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="rough.js"></script>
+</head>
+<body>
+  <!-- Header / Top Navigation -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </svg>
+        <span>ExcaliLite</span>
+      </div>
+      <div class="badge">Clone</div>
+    </div>
+
+    <!-- Center Drawing Toolbar -->
+    <div class="center-toolbar">
+      <button class="tool-btn active" data-tool="select" title="Selection (V)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3l7 18 3-7 7-3L3 3z"></path>
+        </svg>
+        <span class="tool-shortcut">1</span>
+      </button>
+
+      <button class="tool-btn" data-tool="rectangle" title="Rectangle Box (R)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        </svg>
+        <span class="tool-shortcut">2</span>
+      </button>
+
+      <button class="tool-btn" data-tool="connector" title="Arrow Connector (A)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+        <span class="tool-shortcut">3</span>
+      </button>
+
+      <button class="tool-btn" data-tool="text" title="Text (T)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 7 4 4 20 4 20 7"></polyline>
+          <line x1="9" y1="20" x2="15" y2="20"></line>
+          <line x1="12" y1="4" x2="12" y2="20"></line>
+        </svg>
+        <span class="tool-shortcut">4</span>
+      </button>
+
+      <div class="toolbar-separator"></div>
+
+      <button class="tool-btn" id="deleteBtn" title="Delete selected element (Del / Backspace)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"></polyline>
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Actions / Export & Save -->
+    <div class="header-right">
+      <button class="action-btn" id="saveBtn" title="Save Drawing to JSON">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+          <polyline points="17 21 17 13 7 13 7 21"></polyline>
+          <polyline points="7 3 7 8 15 8"></polyline>
+        </svg>
+        <span>Save</span>
+      </button>
+
+      <button class="action-btn" id="loadBtn" title="Open / Load JSON file">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        <span>Open</span>
+      </button>
+      <input type="file" id="fileInput" accept=".json" style="display:none">
+
+      <button class="action-btn secondary" id="clearBtn" title="Clear Canvas">
+        Clear
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Canvas Workspace -->
+  <main class="canvas-container" id="canvasContainer">
+    <canvas id="canvas"></canvas>
+
+    <!-- Side Floating Styling Property Panel -->
+    <aside class="property-panel" id="propertyPanel">
+      <div class="panel-section-title">Stroke (Outline)</div>
+      
+      <!-- Outline Color Picker -->
+      <div class="color-palette" id="strokePalette">
+        <button class="color-swatch active" data-color="#1e1e1e" style="background:#1e1e1e" title="Black"></button>
+        <button class="color-swatch" data-color="#e03131" style="background:#e03131" title="Red"></button>
+        <button class="color-swatch" data-color="#2f9e44" style="background:#2f9e44" title="Green"></button>
+        <button class="color-swatch" data-color="#1971c2" style="background:#1971c2" title="Blue"></button>
+        <button class="color-swatch" data-color="#f08c00" style="background:#f08c00" title="Orange"></button>
+        <button class="color-swatch" data-color="#9c36b5" style="background:#9c36b5" title="Purple"></button>
+      </div>
+
+      <!-- Stroke Width -->
+      <div class="panel-row">
+        <label>Width</label>
+        <div class="segmented-control" id="strokeWidthControl">
+          <button class="segment active" data-val="1">Thin</button>
+          <button class="segment" data-val="2.5">Med</button>
+          <button class="segment" data-val="4.5">Thick</button>
+        </div>
+      </div>
+
+      <!-- Stroke Style -->
+      <div class="panel-row">
+        <label>Style</label>
+        <div class="segmented-control" id="strokeStyleControl">
+          <button class="segment active" data-val="solid">Solid</button>
+          <button class="segment" data-val="dashed">Dashed</button>
+          <button class="segment" data-val="dotted">Dotted</button>
+        </div>
+      </div>
+
+      <div class="panel-divider"></div>
+
+      <!-- Inside Fill Color -->
+      <div class="panel-section-title">Background (Inside Fill)</div>
+      <div class="color-palette" id="bgPalette">
+        <button class="color-swatch transparent-swatch active" data-color="transparent" title="Transparent"></button>
+        <button class="color-swatch" data-color="#ffc9c9" style="background:#ffc9c9" title="Soft Pink"></button>
+        <button class="color-swatch" data-color="#b2f2bb" style="background:#b2f2bb" title="Soft Green"></button>
+        <button class="color-swatch" data-color="#a5d8ff" style="background:#a5d8ff" title="Soft Blue"></button>
+        <button class="color-swatch" data-color="#ffec99" style="background:#ffec99" title="Soft Yellow"></button>
+        <button class="color-swatch" data-color="#eebefa" style="background:#eebefa" title="Soft Lavender"></button>
+      </div>
+
+      <!-- Fill Pattern -->
+      <div class="panel-row">
+        <label>Fill</label>
+        <div class="segmented-control" id="fillStyleControl">
+          <button class="segment active" data-val="hachure">Sketch</button>
+          <button class="segment" data-val="cross-hatch">Cross</button>
+          <button class="segment" data-val="solid">Solid</button>
+        </div>
+      </div>
+
+      <div class="panel-divider"></div>
+
+      <!-- Roughness / Hand-drawn Style -->
+      <div class="panel-row">
+        <label>Sloppiness</label>
+        <div class="segmented-control" id="roughnessControl">
+          <button class="segment" data-val="0">Neat</button>
+          <button class="segment active" data-val="1.4">Hand</button>
+          <button class="segment" data-val="2.8">Sketch</button>
+        </div>
+      </div>
+
+      <div class="panel-divider"></div>
+
+      <!-- Font Size for Box Text -->
+      <div class="panel-row">
+        <label>Font</label>
+        <div class="segmented-control" id="fontSizeControl">
+          <button class="segment" data-val="16">S</button>
+          <button class="segment active" data-val="20">M</button>
+          <button class="segment" data-val="26">L</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Inline editing input for text -->
+    <textarea id="inlineTextInput" class="inline-text-editor" style="display:none"></textarea>
+
+    <!-- Bottom Status Bar / Hint -->
+    <div class="canvas-hint">
+      <span>💡 Double-click any box to write/edit text • Drag connectors from box to box • Delete with Backspace</span>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
